@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="relative overflow-x-auto shadow-md sm:rounded-lg my-8">
+    <h1 class="text-2xl font-semibold text-gray-800 dark:text mb-4">Analyzed Comments</h1>
+    <form method="GET" action="" class="max-w-md mr-auto mb-6">
+        <label for="search" class="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white">Search Comments</label>
+        <div class="relative flex">
+            <!-- Search Icon -->
+            <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
+                <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
+                </svg>
+            </div>
+    
+            <!-- Search Input -->
+            <input type="search" id="search" name="q" value="{{ search_query|default:'' }}" 
+                class="block w-full p-4 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" 
+                placeholder="Search Comments..." />
+    
+            <!-- Search Button -->
+            <button type="submit" 
+                class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 ml-2">
+                Search
+            </button>
+    
+            <!-- Reset Button -->
+            <button type="button" onclick="window.location.href=window.location.pathname" 
+                class="text-gray-700 bg-gray-200 hover:bg-gray-300 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-gray-600 dark:hover:bg-gray-700 dark:text-white dark:focus:ring-gray-800 ml-2">
+                Reset
+            </button>
+        </div>
+    </form>
+    <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+        <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+            <tr>
+                <th scope="col" class="px-6 py-3">Post ID</th>
+                <th scope="col" class="px-6 py-3">Comment</th>
+                <th scope="col" class="px-6 py-3">User</th>
+                <th scope="col" class="px-6 py-3">Toxicity Parameters</th>
+                <th scope="col" class="px-6 py-3">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for comment in comments %}
+            <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                <td class="px-6 py-4">{{ comment.post_id_display}}</td>
+                <td class="px-6 py-4">{{ comment.content }}</td>
+                <td class="px-6 py-4">{{ comment.user_name }}</td>
+                <td class="px-6 py-4">
+                    <ul class="list-disc pl-4">
+                        {% if comment.toxicity_parameters.toxic %}<li class="text-red-600">Toxic</li>{% endif %}
+                        {% if comment.toxicity_parameters.severe_toxic %}<li class="text-red-700">Severe Toxic</li>{% endif %}
+                        {% if comment.toxicity_parameters.obscene %}<li class="text-orange-600">Obscene</li>{% endif %}
+                        {% if comment.toxicity_parameters.threat %}<li class="text-yellow-600">Threat</li>{% endif %}
+                        {% if comment.toxicity_parameters.insult %}<li class="text-purple-600">Insult</li>{% endif %}
+                        {% if comment.toxicity_parameters.identity_hate %}<li class="text-indigo-600">Identity Hate</li>{% endif %}
+                    </ul>
+                    <button type="button" 
+onclick="openEditModal('{{ comment.id }}', 
+        '{{ comment.toxicity_parameters.toxic }}', 
+        '{{ comment.toxicity_parameters.severe_toxic }}', 
+        '{{ comment.toxicity_parameters.obscene }}', 
+        '{{ comment.toxicity_parameters.threat }}', 
+        '{{ comment.toxicity_parameters.insult }}', 
+        '{{ comment.toxicity_parameters.identity_hate }}')"
+    class="mt-2 text-white bg-green-600 hover:bg-green-700 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-3 py-1.5 dark:bg-green-500 dark:hover:bg-green-600 dark:focus:ring-green-900">Edit</button>
+                </td>              
+                <td class="px-6 py-4">
+                    <div class="flex gap-2">
+                        <!-- Delete Button -->
+                        <form method="POST" action="{% url 'delete_comment' comment.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-3 py-1.5 dark:bg-red-500 dark:hover:bg-red-600 dark:focus:ring-red-900">
+                                Delete
+                            </button>
+                        </form>
+                        {% if comment.is_hidden %}
+                        <form method="POST" action="{% url 'unhide_comment' comment.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="text-white bg-yellow-500 hover:bg-yellow-600 focus:ring-4 focus:ring-yellow-300 font-medium rounded-lg text-sm px-3 py-1.5 dark:bg-yellow-400 dark:hover:bg-yellow-500 dark:focus:ring-yellow-900">
+                                Unhide
+                            </button>
+                        </form>
+                        {% else %}
+                        <form method="POST" action="{% url 'hide_comment' comment.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-3 py-1.5 dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-900">
+                                Hide
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
+                    No comments available.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <nav class="flex items-center justify-between pt-4" aria-label="Table navigation">
+        <span class="text-sm font-normal text-gray-500 dark:text">Showing 
+            <span class="font-semibold text-gray-900 dark:text">{{ page_obj.start_index }}-{{ page_obj.end_index }}</span> 
+            of <span class="font-semibold text-gray-900 dark:text">{{ page_obj.paginator.count }}</span>
+        </span>
+        <ul class="inline-flex items-center -space-x-px">
+            {% if page_obj.has_previous %}
+            <li>
+                <a href="?page={{ page_obj.previous_page_number }}" class="flex items-center justify-center px-3 h-8 text-gray-500 bg-white border border-gray-300 rounded-l-lg hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700">
+                    Previous
+                </a>
+            </li>
+            {% endif %}
+            {% for i in page_obj.paginator.page_range %}
+            <li class="inline-block mx-3 mr-2">
+                <a href="?page={{ i }}" class="{% if i == page_obj.number %}text-blue-600 bg-blue-50 hover:bg-blue-100 hover:text-blue-700{% else %}text-gray-500 bg-white hover:bg-gray-100 hover:text-gray-700{% endif %}">
+                    {{ i }}
+                </a>
+            </li>
+            {% endfor %}
+            {% if page_obj.has_next %}
+            <li style="margin-inline: 20px;" class="inline-block">
+                <a href="?page={{ page_obj.next_page_number }}" class="flex items-center justify-center px-3 h-8 text-gray-500 bg-white border border-gray-300 rounded-r-lg hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700">
+                    Next
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    <!-- Edit Toxicity Modal -->
+<div id="editToxicityModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-96">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Edit Toxicity Labels</h2>
+        
+        <form id="editToxicityForm" method="POST">
+            {% csrf_token %}
+            <input type="hidden" id="commentId" name="comment_id">
+            
+            <div class="mb-4">
+                <label class="inline-flex items-center">
+                    <input type="checkbox" id="toxic" name="toxic" class="form-checkbox text-red-600">
+                    <span class="ml-2 text-red-600">Toxic</span>
+                </label>
+            </div>
+            <div class="mb-4">
+                <label class="inline-flex items-center">
+                    <input type="checkbox" id="severe_toxic" name="severe_toxic" class="form-checkbox text-red-700">
+                    <span class="ml-2 text-red-700">Severe Toxic</span>
+                </label>
+            </div>
+            <div class="mb-4">
+                <label class="inline-flex items-center">
+                    <input type="checkbox" id="obscene" name="obscene" class="form-checkbox text-orange-600">
+                    <span class="ml-2 text-orange-600">Obscene</span>
+                </label>
+            </div>
+            <div class="mb-4">
+                <label class="inline-flex items-center">
+                    <input type="checkbox" id="threat" name="threat" class="form-checkbox text-yellow-600">
+                    <span class="ml-2 text-yellow-600">Threat</span>
+                </label>
+            </div>
+            <div class="mb-4">
+                <label class="inline-flex items-center">
+                    <input type="checkbox" id="insult" name="insult" class="form-checkbox text-purple-600">
+                    <span class="ml-2 text-purple-600">Insult</span>
+                </label>
+            </div>
+            <div class="mb-4">
+                <label class="inline-flex items-center">
+                    <input type="checkbox" id="identity_hate" name="identity_hate" class="form-checkbox text-indigo-600">
+                    <span class="ml-2 text-indigo-600">Identity Hate</span>
+                </label>
+            </div>
+
+            <div class="flex justify-end">
+                <button type="button" onclick="closeEditModal()" class="text-gray-700 bg-gray-300 px-4 py-2 rounded-lg mr-2">Cancel</button>
+                <button type="submit" class="text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+<script>
+    function openEditModal(commentId, toxic, severe_toxic, obscene, threat, insult, identity_hate) {
+        const modal = document.getElementById("editToxicityModal");
+        const form = document.getElementById("editToxicityForm");
+        const commentIdInput = document.getElementById("commentId");
+
+        // Set the form action dynamically
+        form.action = `{% url 'edit_toxicity_labels' 0 %}`.replace("0", commentId);
+
+        // Set comment ID
+        commentIdInput.value = commentId;
+
+        // Set checkboxes based on toxicity labels
+        document.getElementById("toxic").checked = toxic === "True";
+        document.getElementById("severe_toxic").checked = severe_toxic === "True";
+        document.getElementById("obscene").checked = obscene === "True";
+        document.getElementById("threat").checked = threat === "True";
+        document.getElementById("insult").checked = insult === "True";
+        document.getElementById("identity_hate").checked = identity_hate === "True";
+
+        // Show modal
+        modal.classList.remove("hidden");
+    }
+
+    function closeEditModal() {
+        document.getElementById("editToxicityModal").classList.add("hidden");
+    }
+</script>
+
+
+</div>
+{% endblock %}
