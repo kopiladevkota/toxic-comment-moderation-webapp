@@ -1,7 +1,7 @@
 # ToxicMeter Web Application
 
 A Django project for analyzing toxicity in comments. 
-[Toxic Comment Classification Model](https://github.com/Dipesh-Ghimire/Comment-Toxicity-Classification)
+[Toxic Comment Classification Model](https://github.com/kopiladevkota/toxic-comment-moderation-webapp)
 This guide will walk you through setting up the project environment.
 
 ## Prerequisites
